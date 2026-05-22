@@ -1,0 +1,150 @@
+
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;">물총축제 예산 플래너 v3 — 비닐 짐색 90만원 반영</h2>
+<style>
+* { box-sizing: border-box; }
+.sec { margin-bottom: 1.75rem; }
+.sec-title { font-size: 15px; font-weight: 500; margin: 0 0 10px; color: var(--color-text-primary); }
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; }
+.mcard { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.85rem 1rem; text-align: center; }
+.mlabel { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 3px; }
+.mval { font-size: 19px; font-weight: 500; color: var(--color-text-primary); }
+.g4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+.g2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+.srow { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.slabel { font-size: 13px; color: var(--color-text-secondary); min-width: 80px; }
+.sval { font-size: 13px; font-weight: 500; min-width: 52px; text-align: right; color: var(--color-text-primary); }
+.pos { color: var(--color-text-success); }
+.neg { color: var(--color-text-danger); }
+.toggle-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 0.5px solid var(--color-border-tertiary); gap: 8px; }
+.toggle-item:last-child { border-bottom: none; }
+.tname { flex: 1; font-size: 14px; color: var(--color-text-primary); }
+.tsub { font-size: 11px; color: var(--color-text-secondary); display: block; }
+.tamt { font-size: 13px; color: var(--color-text-secondary); min-width: 60px; text-align: right; }
+.toggle-btn { width: 36px; height: 20px; border-radius: 10px; border: none; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; }
+.toggle-btn.on { background: var(--color-background-success); }
+.toggle-btn.off { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); }
+.toggle-btn::after { content:''; position:absolute; width:14px; height:14px; border-radius:50%; top:3px; transition: left 0.2s; }
+.toggle-btn.on::after { left:19px; background: var(--color-text-success); }
+.toggle-btn.off::after { left:2px; background: var(--color-text-primary); }
+.badge { font-size: 11px; padding: 2px 8px; border-radius: var(--border-radius-md); white-space: nowrap; }
+.bw { background: var(--color-background-warning); color: var(--color-text-warning); }
+.hint { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 8px 10px; font-size: 12px; color: var(--color-text-secondary); margin-top: 10px; }
+</style>
+
+<div style="padding: 0.5rem 0;">
+
+  <div class="sec">
+    <p class="sec-title"><i class="ti ti-calculator" aria-hidden="true" style="font-size:16px;vertical-align:-2px;margin-right:6px;"></i>수익 시뮬레이터</p>
+    <div class="card">
+      <div class="srow">
+        <span class="slabel">사전예약</span>
+        <input type="range" min="0" max="300" step="10" value="200" id="pre" style="flex:1;">
+        <span class="sval" id="pre-out">200명</span>
+      </div>
+      <div class="srow">
+        <span class="slabel">현장참여</span>
+        <input type="range" min="0" max="200" step="10" value="50" id="walk" style="flex:1;">
+        <span class="sval" id="walk-out">50명</span>
+      </div>
+      <div style="margin:12px 0;border-top:0.5px solid var(--color-border-tertiary);"></div>
+      <div class="g4">
+        <div class="mcard"><div class="mlabel">총 참여자</div><div class="mval" id="m-total">250명</div></div>
+        <div class="mcard"><div class="mlabel">티켓 수익</div><div class="mval pos" id="m-rev">225만원</div></div>
+        <div class="mcard"><div class="mlabel">총 가용예산</div><div class="mval" id="m-budget">525만원</div></div>
+        <div class="mcard"><div class="mlabel">예상 잔액</div><div class="mval" id="m-net">-만원</div></div>
+      </div>
+      <p style="font-size:12px;color:var(--color-text-secondary);margin-top:10px;">사전예약 1만원 / 현장 5천원 · 기본 예산 300만원 포함</p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <p class="sec-title"><i class="ti ti-toggle-right" aria-hidden="true" style="font-size:16px;vertical-align:-2px;margin-right:6px;"></i>지출 항목 조정 <span style="font-size:12px;color:var(--color-text-secondary);font-weight:400;">— 토글로 포함/제외</span></p>
+    <div class="card">
+      <div id="items-list"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;font-size:15px;font-weight:500;border-top:0.5px solid var(--color-border-tertiary);margin-top:4px;">
+        <span>예상 총 지출</span>
+        <span id="total-exp" style="color:var(--color-text-primary);">0만원</span>
+      </div>
+      <div id="budget-warn" class="hint" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:0.5rem;">
+    <button onclick="sendPrompt('협찬 유치 전략이랑 협찬 가능한 품목 알려줘')" style="font-size:13px;padding:8px 18px;margin-right:8px;">협찬 전략 알아보기 ↗</button>
+    <button onclick="sendPrompt('플랜 A 기준 운영 타임라인 만들어줘')" style="font-size:13px;padding:8px 18px;">운영 타임라인 만들기 ↗</button>
+  </div>
+</div>
+
+<script>
+const ITEMS = [
+  { id:'game_main', name:'메인게임 2개', sub:'서바이벌 왕게임 + 개큰 물총대전 / 소모품·진행 포함', amt:30, on:true },
+  { id:'game_sub',  name:'저비용 서브게임 3개', sub:'물풍선 낚시·물 전달하기·얼음 보물 구출 / 재료비 위주', amt:15, on:true },
+  { id:'kit_bag',   name:'비닐 짐색 300개', sub:'방수 장점 / 300개 기준 약 90만원', amt:90, on:true },
+  { id:'kit_towel', name:'수건 300개', sub:'화이트코튼 95g / 개당 2,300원', amt:69, on:true },
+  { id:'kit_bug',   name:'모기퇴치 밴드 300개', sub:'개당 약 267원', amt:8, on:true },
+  { id:'ops',       name:'운영비', sub:'장소·보험·인쇄·간식·예비비 포함', amt:50, on:true },
+  { id:'kit_water', name:'물/이온음료', sub:'협찬 권장 — 확보 못할 경우 약 5만원', amt:5, on:false },
+  { id:'kit_wfp',   name:'방수팩 300개', sub:'개당 2,310원 × 300 / 인기 아이템', amt:69, on:false },
+  { id:'kit_gun',   name:'물총 300개 (키트 포함)', sub:'개당 1,290원 × 300 / 대여·협찬 전환 권장', amt:39, on:false },
+  { id:'waterslide',name:'워터슬라이드 업체 대관', sub:'80~130만원 범위 / 중간값 100만원으로 계산', amt:100, on:false },
+  { id:'airbounce', name:'에어바운스 대관', sub:'업체마다 상이 / 약 50만원 예상', amt:50, on:false },
+];
+
+function renderItems() {
+  const list = document.getElementById('items-list');
+  list.innerHTML = '';
+  ITEMS.forEach(item => {
+    const d = document.createElement('div');
+    d.className = 'toggle-item';
+    d.innerHTML = `
+      <span class="tname">${item.name}<span class="tsub">${item.sub}</span></span>
+      <span class="tamt">${item.amt}만원</span>
+      <button class="toggle-btn ${item.on?'on':'off'}" data-id="${item.id}" aria-label="${item.name} ${item.on?'포함':'제외'}"></button>
+    `;
+    list.appendChild(d);
+  });
+  list.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const it = ITEMS.find(i => i.id === btn.dataset.id);
+      if(it) { it.on = !it.on; renderItems(); updateCalc(); }
+    });
+  });
+}
+
+function updateCalc() {
+  const pre = parseInt(document.getElementById('pre').value);
+  const walk = parseInt(document.getElementById('walk').value);
+  const rev = pre * 10000 + walk * 5000;
+  const totalBudget = 3000000 + rev;
+  const totalExp = ITEMS.filter(i => i.on).reduce((s, i) => s + i.amt * 10000, 0);
+  const net = totalBudget - totalExp;
+
+  document.getElementById('pre-out').textContent = pre + '명';
+  document.getElementById('walk-out').textContent = walk + '명';
+  document.getElementById('m-total').textContent = (pre + walk) + '명';
+  document.getElementById('m-rev').textContent = Math.round(rev / 10000) + '만원';
+  document.getElementById('m-budget').textContent = Math.round(totalBudget / 10000) + '만원';
+
+  const netEl = document.getElementById('m-net');
+  netEl.textContent = (net >= 0 ? '+' : '') + Math.round(net / 10000) + '만원';
+  netEl.className = 'mval ' + (net >= 0 ? 'pos' : 'neg');
+
+  document.getElementById('total-exp').textContent = Math.round(totalExp / 10000) + '만원';
+
+  const warn = document.getElementById('budget-warn');
+  if (net < 0) {
+    warn.style.display = 'block';
+    warn.textContent = '예산 초과 ' + Math.abs(Math.round(net / 10000)) + '만원 — 항목을 줄이거나 사전예약 인원을 늘려보세요.';
+  } else if (net < 500000) {
+    warn.style.display = 'block';
+    warn.textContent = '잔액이 ' + Math.round(net / 10000) + '만원으로 빠듯해요. 예비비 확보를 권장합니다.';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
+document.getElementById('pre').addEventListener('input', updateCalc);
+document.getElementById('walk').addEventListener('input', updateCalc);
+renderItems();
+updateCalc();
+</script>
