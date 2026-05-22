@@ -1,0 +1,188 @@
+
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;">플랜 A 기준 물총축제 운영 타임라인 — 6~8주 전부터 당일까지</h2>
+<style>
+* { box-sizing: border-box; }
+.phase { margin-bottom: 1.5rem; }
+.phase-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.phase-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.phase-label { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); }
+.phase-title { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 0 1.25rem; }
+.task { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); cursor: pointer; }
+.task:last-child { border-bottom: none; }
+.task-check { width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--color-border-secondary); flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s; }
+.task-check.done { border-color: transparent; }
+.task-body { flex: 1; }
+.task-name { font-size: 14px; color: var(--color-text-primary); line-height: 1.4; transition: color 0.15s; }
+.task-name.done { color: var(--color-text-secondary); text-decoration: line-through; }
+.task-sub { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+.badge { font-size: 11px; padding: 2px 7px; border-radius: var(--border-radius-md); white-space: nowrap; flex-shrink: 0; margin-top: 1px; }
+.bfire { background: #FCEBEB; color: #A32D2D; }
+.bwarn { background: var(--color-background-warning); color: var(--color-text-warning); }
+.binfo { background: var(--color-background-info); color: var(--color-text-info); }
+.bok   { background: var(--color-background-success); color: var(--color-text-success); }
+.progress-bar { height: 4px; border-radius: 2px; background: var(--color-background-secondary); margin-bottom: 6px; overflow: hidden; }
+.progress-fill { height: 4px; border-radius: 2px; transition: width 0.3s; }
+.summary { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 1.5rem; }
+.mcard { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.75rem 1rem; text-align: center; }
+.mlabel { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 3px; }
+.mval { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
+</style>
+
+<div style="padding: 0.5rem 0;">
+
+  <div class="summary">
+    <div class="mcard"><div class="mlabel">전체 할 일</div><div class="mval" id="s-total">0</div></div>
+    <div class="mcard"><div class="mlabel">완료</div><div class="mval" id="s-done" style="color:var(--color-text-success);">0</div></div>
+    <div class="mcard"><div class="mlabel">긴급</div><div class="mval" id="s-urgent" style="color:var(--color-text-danger);">0</div></div>
+    <div class="mcard"><div class="mlabel">진행률</div><div class="mval" id="s-pct">0%</div></div>
+  </div>
+
+  <div id="timeline"></div>
+
+  <div style="text-align:center; margin-top: 1rem;">
+    <button onclick="sendPrompt('협찬 제안서 한 장짜리 초안 작성해줘')" style="font-size:13px;padding:8px 18px;margin-right:8px;">협찬 제안서 초안 ↗</button>
+    <button onclick="sendPrompt('당일 운영 스크립트와 역할 분배표 만들어줘')" style="font-size:13px;padding:8px 18px;">당일 운영 스크립트 ↗</button>
+  </div>
+</div>
+
+<script>
+const PHASES = [
+  {
+    id: 'p1',
+    week: '6~8주 전 — 지금 당장',
+    color: '#E24B4A',
+    dotColor: '#E24B4A',
+    tasks: [
+      { id:'t01', name:'장소 섭외 및 호수공원 대관 신청', sub:'공원 측 연락 → 행사 허가 기간 확인', badge:'bfire', bl:'긴급' },
+      { id:'t02', name:'협찬 접촉 시작 (음료·선크림)', sub:'DM / 이메일 제안서 발송 — 응답까지 1~2주 소요', badge:'bfire', bl:'긴급' },
+      { id:'t03', name:'팀 역할 분배 확정', sub:'총괄 / 게임진행 / 키트관리 / SNS홍보 / 현장안전', badge:'bfire', bl:'긴급' },
+      { id:'t04', name:'사전예약 시스템 구축', sub:'폼 또는 오픈채팅 링크 준비, 입금 확인 방식 결정', badge:'bfire', bl:'긴급' },
+      { id:'t05', name:'메인게임·서브게임 룰 확정', sub:'서바이벌 왕게임 + 개큰 물총대전 + 서브 3개 룰 문서화', badge:'bfire', bl:'긴급' },
+    ]
+  },
+  {
+    id: 'p2',
+    week: '4~5주 전 — 준비 본격화',
+    color: '#BA7517',
+    dotColor: '#BA7517',
+    tasks: [
+      { id:'t06', name:'비닐 짐색 300개 발주', sub:'업체 확정 후 주문 — 배송 2~3주 여유 필요', badge:'bwarn', bl:'중요' },
+      { id:'t07', name:'수건 300개 발주', sub:'화이트코튼 95g / 개당 2,300원 기준', badge:'bwarn', bl:'중요' },
+      { id:'t08', name:'모기퇴치 밴드 발주', sub:'300개 기준 약 8만원', badge:'bwarn', bl:'중요' },
+      { id:'t09', name:'사전예약 홍보 시작', sub:'SNS 포스터 배포, 학교 커뮤니티·에브리타임 게시', badge:'bwarn', bl:'중요' },
+      { id:'t10', name:'협찬 결과 취합 및 확정', sub:'협찬 미확정 품목은 직접 구매로 전환 결정', badge:'bwarn', bl:'중요' },
+      { id:'t11', name:'보험 가입', sub:'행사 배상책임보험 — 운영비 항목에 포함', badge:'bwarn', bl:'중요' },
+      { id:'t12', name:'물총 확보 방식 결정', sub:'협찬 / 구매 / 현장 대여 중 선택', badge:'bwarn', bl:'중요' },
+    ]
+  },
+  {
+    id: 'p3',
+    week: '2~3주 전 — 세부 준비',
+    color: '#185FA5',
+    dotColor: '#185FA5',
+    tasks: [
+      { id:'t13', name:'현수막·인쇄물 제작 발주', sub:'협찬사 로고 포함 여부 확인 후 최종 디자인 확정', badge:'binfo', bl:'일반' },
+      { id:'t14', name:'사전예약 현황 중간 점검', sub:'목표 200명 대비 달성률 확인 — 미달 시 홍보 강화', badge:'binfo', bl:'일반' },
+      { id:'t15', name:'게임 소품·재료 구매', sub:'물풍선·얼음 등 서브게임 재료 / 게임 진행 소품', badge:'binfo', bl:'일반' },
+      { id:'t16', name:'당일 타임테이블 작성', sub:'2시 시작 ~ 7시 마무리 기준 시간대별 프로그램 배치', badge:'binfo', bl:'일반' },
+      { id:'t17', name:'간의탈의실·물 수급 방식 결정', sub:'호수공원 내 수도 위치 파악, 물통 수 결정', badge:'binfo', bl:'일반' },
+      { id:'t18', name:'리허설 / 게임 테스트', sub:'팀원끼리 실제 게임 진행해보기 — 문제점 사전 발견', badge:'binfo', bl:'일반' },
+    ]
+  },
+  {
+    id: 'p4',
+    week: '1주 전 — 최종 점검',
+    color: '#0F6E56',
+    dotColor: '#0F6E56',
+    tasks: [
+      { id:'t19', name:'키트 조립 완료', sub:'짐색 + 수건 + 모기퇴치 패킹 / 수량 확인', badge:'bok', bl:'완료예정' },
+      { id:'t20', name:'사전예약자 명단 정리', sub:'입금 확인, 게임 선택 현황 취합', badge:'bok', bl:'완료예정' },
+      { id:'t21', name:'현장 동선 및 구역 배치 확정', sub:'게임 구역 / 키트 배부 구역 / 짐 보관 / 안전 구역', badge:'bok', bl:'완료예정' },
+      { id:'t22', name:'당일 비상연락망 공유', sub:'팀원 전체 역할·연락처 공유 문서 배포', badge:'bok', bl:'완료예정' },
+      { id:'t23', name:'우천 대비 플랜 B 확인', sub:'우천 시 연기 or 강행 기준 미리 결정', badge:'bok', bl:'완료예정' },
+    ]
+  },
+  {
+    id: 'p5',
+    week: '당일',
+    color: '#534AB7',
+    dotColor: '#534AB7',
+    tasks: [
+      { id:'t24', name:'현장 세팅 (1시간 전)', sub:'구역 배치, 물 공급 확인, 소품 배치, 현수막 설치', badge:'binfo', bl:'당일' },
+      { id:'t25', name:'입장 관리 (사전예약 vs 현장)', sub:'사전예약자 선착순 입장 / 현장 참여자 별도 줄 관리', badge:'binfo', bl:'당일' },
+      { id:'t26', name:'키트 배부', sub:'사전예약자 우선 배부 / 현장 참여자 별도 안내', badge:'binfo', bl:'당일' },
+      { id:'t27', name:'게임 진행 (2시~6시 30분)', sub:'서브게임 상시 → 메인게임 2회 / 중간 휴식 포함', badge:'binfo', bl:'당일' },
+      { id:'t28', name:'현장 SNS 콘텐츠 촬영', sub:'협찬사 제공용 + 홍보 콘텐츠용 사진·영상 확보', badge:'binfo', bl:'당일' },
+      { id:'t29', name:'마무리 및 현장 정리 (7시)', sub:'쓰레기 수거, 장비 회수, 인원 확인 후 해산', badge:'binfo', bl:'당일' },
+    ]
+  }
+];
+
+const state = {};
+PHASES.forEach(p => p.tasks.forEach(t => { state[t.id] = false; }));
+
+function render() {
+  const container = document.getElementById('timeline');
+  container.innerHTML = '';
+
+  let total = 0, done = 0, urgent = 0;
+  PHASES.forEach(p => {
+    p.tasks.forEach(t => {
+      total++;
+      if (state[t.id]) done++;
+      if (t.badge === 'bfire') urgent++;
+    });
+  });
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-done').textContent = done;
+  document.getElementById('s-urgent').textContent = urgent;
+  document.getElementById('s-pct').textContent = Math.round(done / total * 100) + '%';
+
+  PHASES.forEach(p => {
+    const phaseDone = p.tasks.filter(t => state[t.id]).length;
+    const phasePct = Math.round(phaseDone / p.tasks.length * 100);
+
+    const div = document.createElement('div');
+    div.className = 'phase';
+    div.innerHTML = `
+      <div class="phase-header">
+        <div class="phase-dot" style="background:${p.dotColor};"></div>
+        <div>
+          <div class="phase-label">${p.week}</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+            <div class="progress-bar" style="width:120px;"><div class="progress-fill" style="width:${phasePct}%;background:${p.dotColor};"></div></div>
+            <span style="font-size:12px;color:var(--color-text-secondary);">${phaseDone}/${p.tasks.length}</span>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="card-${p.id}"></div>
+    `;
+    container.appendChild(div);
+
+    const card = div.querySelector(`#card-${p.id}`);
+    p.tasks.forEach(t => {
+      const isDone = state[t.id];
+      const row = document.createElement('div');
+      row.className = 'task';
+      row.innerHTML = `
+        <div class="task-check ${isDone ? 'done' : ''}" style="${isDone ? 'background:'+p.dotColor+';' : ''}">
+          ${isDone ? '<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
+        </div>
+        <div class="task-body">
+          <div class="task-name ${isDone ? 'done' : ''}">${t.name}</div>
+          <div class="task-sub">${t.sub}</div>
+        </div>
+        <span class="badge ${isDone ? 'bok' : t.badge}">${isDone ? '완료' : t.bl}</span>
+      `;
+      row.addEventListener('click', () => {
+        state[t.id] = !state[t.id];
+        render();
+      });
+      card.appendChild(row);
+    });
+  });
+}
+
+render();
+</script>
